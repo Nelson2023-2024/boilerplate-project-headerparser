@@ -1,34 +1,55 @@
-// index.js
-// where your node app starts
-
-// init project
-require("dotenv").config();
+var os = require("os");
 var express = require("express");
+const requestIp = require("request-ip");
+require("dotenv").config();
+var cors = require("cors");
+
 var app = express();
 
-// enable CORS (https://en.wikipedia.org/wiki/Cross-origin_resource_sharing)
-// so that your API is remotely testable by FCC
-var cors = require("cors");
-app.use(cors({ optionsSuccessStatus: 200 })); // some legacy browsers choke on 204
+// Enable CORS so that your API is remotely testable
+app.use(cors({ optionsSuccessStatus: 200 }));
 
-// http://expressjs.com/en/starter/static-files.html
+// Serve static files from 'public' directory
 app.use(express.static("public"));
 
-// http://expressjs.com/en/starter/basic-routing.html
+// Main page route
 app.get("/", function (req, res) {
   res.sendFile(__dirname + "/views/index.html");
 });
 
-// your first API endpoint...
+// Function to get local machine's IPv4 address
+function getLocalIPv4() {
+  var networkInterfaces = os.networkInterfaces();
+  let localIp = null;
+
+  // Loop through network interfaces and find the first non-internal IPv4 address
+  for (let iface in networkInterfaces) {
+    networkInterfaces[iface].forEach(function (details) {
+      if (details.family === "IPv4" && !details.internal) {
+        localIp = details.address;
+      }
+    });
+  }
+
+  return localIp;
+}
+
+// API endpoint to show client info and local machine's IPv4
 app.get("/api/whoami", function (req, res) {
+  var clientIp = requestIp.getClientIp(req);
+
+  // Get local machine's IPv4 address
+  var localIp = getLocalIPv4();
+
+  // Return JSON with the client's IP, language, software, and the local machine's IP
   res.json({
-    ipaddress: req.socket.remoteAddress,
+    ipaddress: localIp,
     language: req.headers["accept-language"],
     software: req.headers["user-agent"],
   });
 });
 
-// listen for requests :)
+// Start the server on PORT or 3000
 var listener = app.listen(process.env.PORT || 3000, function () {
   console.log("Your app is listening on port " + listener.address().port);
 });
